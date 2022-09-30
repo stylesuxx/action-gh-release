@@ -14,6 +14,15 @@ export interface ReleaseAsset {
   data: Buffer;
 }
 
+export interface RateLimit {
+  rate: {
+    limit: number;
+    used: number;
+    remaining: number;
+    reset: number;
+  }
+}
+
 export interface Release {
   id: number;
   upload_url: string;
@@ -28,7 +37,7 @@ export interface Release {
 }
 
 export interface Releaser {
-  getRateLimit(): Promise<{}>;
+  getRateLimit(): Promise<{ data: RateLimit }>;
 
   getReleaseByTag(params: {
     owner: string;
@@ -76,7 +85,7 @@ export class GitHubReleaser implements Releaser {
     this.github = github;
   }
 
-  getRateLimit(): Promise<{}> {
+  getRateLimit(): Promise<{ data: RateLimit }> {
     return this.github.rest.rateLimit.get();
   }
 
@@ -322,7 +331,8 @@ export const release = async (
         `⚠️ Unexpected error fetching GitHub release for tag ${config.github_ref}: ${error}`
       );
       const response = await releaser.getRateLimit();
-      console.log(response);
+      const rate = response.data.rate;
+      console.log(`${rate.used}/${rate.limit} - Remaining: ${rate.remaining} Reset: ${rate.reset}`);
 
       throw error;
     }
