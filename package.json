@@ -26,6 +26,7 @@
     "@octokit/plugin-throttling": "^3.5.1",
     "glob": "^7.1.6",
     "mime": "^2.4.4",
+    "ncc": "^0.3.6",
     "node-fetch": "^2.6.1"
   },
   "devDependencies": {

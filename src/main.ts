@@ -66,7 +66,7 @@ async function run() {
         console.warn(`🤔 ${config.input_files} not include valid file.`);
       }
       const currentAssets = rel.assets;
-      let assets = [];
+      let assets : any[] = [];
       for(let i = 0; i < files.length; i+= 1) {
         const path = files[i];
         const json = await upload(
@@ -77,7 +77,7 @@ async function run() {
           currentAssets
         );
         delete json.uploader;
-        assets[] = json;
+        assets.push(json);
       }
 
       if(false) {
