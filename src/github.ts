@@ -28,11 +28,14 @@ export interface Release {
 }
 
 export interface Releaser {
+  getRateLimit(): Promise<{}>;
+
   getReleaseByTag(params: {
     owner: string;
     repo: string;
     tag: string;
   }): Promise<{ data: Release }>;
+
 
   createRelease(params: {
     owner: string;
@@ -71,6 +74,10 @@ export class GitHubReleaser implements Releaser {
   github: GitHub;
   constructor(github: GitHub) {
     this.github = github;
+  }
+
+  getRateLimit(): Promise<{}> {
+    return this.github.rest.rateLimit.get();
   }
 
   getReleaseByTag(params: {
@@ -314,6 +321,9 @@ export const release = async (
       console.log(
         `⚠️ Unexpected error fetching GitHub release for tag ${config.github_ref}: ${error}`
       );
+      const response = await releaser.getRateLimit();
+      console.log(response);
+
       throw error;
     }
   }
