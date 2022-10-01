@@ -152,16 +152,12 @@ export const mimeOrDefault = (path: string): string => {
   return getType(path) || "application/octet-stream";
 };
 
-export const printRateLimit = (response) => {
+export const printRateLimitStats = async (releaser: Releaser) => {
+  const response = await releaser.getRateLimit();
   const rate = response.data.rate;
   console.log(
     `Rate limits: ${rate.used}/${rate.limit} - Remaining: ${rate.remaining} Reset: ${rate.reset}`
   );
-};
-
-export const printRateLimitStats = async (releaser: Releaser) => {
-  const response = await releaser.getRateLimit();
-  printRateLimit(response);
 };
 
 export const upload = async (
@@ -348,8 +344,7 @@ export const release = async (
         `⚠️ Unexpected error fetching GitHub release for tag ${config.github_ref}: ${error}`
       );
 
-      const response = await releaser.getRateLimit();
-      printRateLimit(response);
+      await printRateLimitStats(releaser);
 
       throw error;
     }

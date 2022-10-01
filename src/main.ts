@@ -11,6 +11,7 @@ import { setFailed, setOutput } from "@actions/core";
 import { GitHub, getOctokitOptions } from "@actions/github/lib/utils";
 
 import { env } from "process";
+import { appendFileSync } from "fs";
 
 async function run() {
   try {
@@ -68,22 +69,41 @@ async function run() {
         console.warn(`🤔 ${config.input_files} not include valid file.`);
       }
       const currentAssets = rel.assets;
-      const assets = await Promise.all(
-        files.map(async path => {
-          const json = await upload(
-            config,
-            gh,
-            uploadUrl(rel.upload_url),
-            path,
-            currentAssets
-          );
-          delete json.uploader;
-          return json;
-        })
-      ).catch(async (error) => {
+      let assets: any[] = [];
+      for(let i = 0; i < files.length; i += 1) {
+        const path = files[i];
+
         await printRateLimitStats(github);
-        throw error;
-      });
+        const json = await upload(
+          config,
+          gh,
+          uploadUrl(rel.upload_url),
+          path,
+          currentAssets
+        );
+
+        delete json.uploader;
+        assets.push(json);
+      }
+
+      if(false) {
+        assets = await Promise.all(
+          files.map(async path => {
+            const json = await upload(
+              config,
+              gh,
+              uploadUrl(rel.upload_url),
+              path,
+              currentAssets
+            );
+            delete json.uploader;
+            return json;
+          })
+        ).catch(async (error) => {
+          await printRateLimitStats(github);
+          throw error;
+        });
+      }
       setOutput("assets", assets);
     }
 
