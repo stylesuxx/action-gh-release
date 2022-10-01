@@ -5,12 +5,13 @@ import {
   unmatchedPatterns,
   uploadUrl
 } from "./util";
-import { release, upload, GitHubReleaser } from "./github";
+import { release, upload, GitHubReleaser, printRateLimitStats } from "./github";
 import { getOctokit } from "@actions/github";
 import { setFailed, setOutput } from "@actions/core";
 import { GitHub, getOctokitOptions } from "@actions/github/lib/utils";
 
 import { env } from "process";
+import { appendFileSync } from "fs";
 
 async function run() {
   try {
@@ -59,31 +60,67 @@ async function run() {
       }
     });
     //);
-    const rel = await release(config, new GitHubReleaser(gh));
+    const github = new GitHubReleaser(gh);
+
+    if(config.input_print_debug) {
+      await printRateLimitStats(github);
+    }
+
+    const rel = await release(config, github);
     if (config.input_files) {
       const files = paths(config.input_files);
       if (files.length == 0) {
         console.warn(`🤔 ${config.input_files} not include valid file.`);
       }
       const currentAssets = rel.assets;
-      const assets = await Promise.all(
-        files.map(async path => {
+      let assets: any[] = [];
+
+      if(config.input_sequential_upload) {
+        for(let i = 0; i < files.length; i += 1) {
+          const path = files[i];
+
           const json = await upload(
             config,
             gh,
             uploadUrl(rel.upload_url),
             path,
-            currentAssets
+            currentAssets,
+            rel.id
           );
+
           delete json.uploader;
-          return json;
-        })
-      ).catch(error => {
-        throw error;
-      });
+          assets.push(json);
+        }
+      } else {
+        assets = await Promise.all(
+          files.map(async path => {
+            const json = await upload(
+              config,
+              gh,
+              uploadUrl(rel.upload_url),
+              path,
+              currentAssets,
+              rel.id
+            );
+            delete json.uploader;
+            return json;
+          })
+        ).catch(async (error) => {
+          if(config.input_print_debug) {
+            await printRateLimitStats(github);
+          }
+
+          throw error;
+        });
+      }
       setOutput("assets", assets);
     }
+
     console.log(`🎉 Release ready at ${rel.html_url}`);
+    if(config.input_print_debug) {
+      await printRateLimitStats(github);
+    }
+
     setOutput("url", rel.html_url);
     setOutput("id", rel.id.toString());
     setOutput("upload_url", rel.upload_url);

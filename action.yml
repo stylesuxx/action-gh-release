@@ -46,6 +46,12 @@ inputs:
   append_body:
     description: "Append to existing body instead of overwriting it. Default is false."
     required: false
+  sequential_upload:
+    description: "Upload sequentially instead of concurrently - this might fix rate limiting issues when uploading lots of release files."
+    required: false
+  print_debug:
+    description: "Print debug messages such as rate limits."
+    required: false
 env:
   "GITHUB_TOKEN": "As provided by Github Actions"
 outputs:

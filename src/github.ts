@@ -14,6 +14,15 @@ export interface ReleaseAsset {
   data: Buffer;
 }
 
+export interface RateLimit {
+  rate: {
+    limit: number;
+    used: number;
+    remaining: number;
+    reset: number;
+  }
+}
+
 export interface Release {
   id: number;
   upload_url: string;
@@ -28,11 +37,14 @@ export interface Release {
 }
 
 export interface Releaser {
+  getRateLimit(): Promise<{ data: RateLimit }>;
+
   getReleaseByTag(params: {
     owner: string;
     repo: string;
     tag: string;
   }): Promise<{ data: Release }>;
+
 
   createRelease(params: {
     owner: string;
@@ -71,6 +83,10 @@ export class GitHubReleaser implements Releaser {
   github: GitHub;
   constructor(github: GitHub) {
     this.github = github;
+  }
+
+  getRateLimit(): Promise<{ data: RateLimit }> {
+    return this.github.rest.rateLimit.get();
   }
 
   getReleaseByTag(params: {
@@ -136,15 +152,24 @@ export const mimeOrDefault = (path: string): string => {
   return getType(path) || "application/octet-stream";
 };
 
+export const printRateLimitStats = async (releaser: Releaser) => {
+  const response = await releaser.getRateLimit();
+  const rate = response.data.rate;
+  console.log(
+    `Rate limits: ${rate.used}/${rate.limit} - Remaining: ${rate.remaining} Reset: ${rate.reset}`
+  );
+};
+
 export const upload = async (
   config: Config,
   github: GitHub,
   url: string,
   path: string,
-  currentAssets: Array<{ id: number; name: string }>
+  currentAssets: Array<{ id: number; name: string }>,
+  releaseId: number,
 ): Promise<any> => {
   const [owner, repo] = config.github_repository.split("/");
-  const { name, size, mime, data: body } = asset(path);
+  const { name, size, mime, data } = asset(path);
   const currentAsset = currentAssets.find(
     ({ name: currentName }) => currentName == name
   );
@@ -159,24 +184,22 @@ export const upload = async (
   console.log(`⬆️ Uploading ${name}...`);
   const endpoint = new URL(url);
   endpoint.searchParams.append("name", name);
-  const resp = await fetch(endpoint, {
-    headers: {
-      "content-length": `${size}`,
-      "content-type": mime,
-      authorization: `token ${config.github_token}`
-    },
-    method: "POST",
-    body
+
+  const response = await github.rest.repos.uploadReleaseAsset({
+    owner,
+    repo,
+    release_id: releaseId,
+    name,
+    data: data.toString("binary"),
   });
-  const json = await resp.json();
-  if (resp.status !== 201) {
+
+  if (response.status !== 201) {
     throw new Error(
-      `Failed to upload release asset ${name}. received status code ${
-        resp.status
-      }\n${json.message}\n${JSON.stringify(json.errors)}`
+      `Failed to upload release asset ${name}. received status code ${response.status}`
     );
   }
-  return json;
+
+  return response.data;
 };
 
 export const release = async (
@@ -269,6 +292,7 @@ export const release = async (
       discussion_category_name,
       generate_release_notes
     });
+
     return release.data;
   } catch (error) {
     if (error.status === 404) {
@@ -282,9 +306,11 @@ export const release = async (
       if (target_commitish) {
         commitMessage = ` using commit "${target_commitish}"`;
       }
+
       console.log(
         `👩‍🏭 Creating new GitHub release for tag ${tag_name}${commitMessage}...`
       );
+
       try {
         let release = await releaser.createRelease({
           owner,
@@ -298,6 +324,7 @@ export const release = async (
           discussion_category_name,
           generate_release_notes
         });
+
         return release.data;
       } catch (error) {
         // presume a race with competing metrix runs
@@ -310,10 +337,14 @@ export const release = async (
         );
         return release(config, releaser, maxRetries - 1);
       }
+
     } else {
       console.log(
         `⚠️ Unexpected error fetching GitHub release for tag ${config.github_ref}: ${error}`
       );
+
+      await printRateLimitStats(releaser);
+
       throw error;
     }
   }

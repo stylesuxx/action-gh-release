@@ -19,6 +19,8 @@ export interface Config {
   input_discussion_category_name?: string;
   input_generate_release_notes?: boolean;
   input_append_body?: boolean;
+  input_sequential_upload?: boolean;
+  input_print_debug?: boolean;
 }
 
 export const uploadUrl = (url: string): string => {
@@ -69,7 +71,9 @@ export const parseConfig = (env: Env): Config => {
     input_discussion_category_name:
       env.INPUT_DISCUSSION_CATEGORY_NAME || undefined,
     input_generate_release_notes: env.INPUT_GENERATE_RELEASE_NOTES == "true",
-    input_append_body: env.INPUT_APPEND_BODY == "true"
+    input_append_body: env.INPUT_APPEND_BODY == "true",
+    input_sequential_upload: env.INPUT_SEQUENTIAL_UPLOAD == "true",
+    input_print_debug: env.INPUT_PRINT_DEBUG == "true"
   };
 };
 
