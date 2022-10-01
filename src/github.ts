@@ -152,6 +152,13 @@ export const mimeOrDefault = (path: string): string => {
   return getType(path) || "application/octet-stream";
 };
 
+export const printRateLimit = (response) => {
+  const rate = response.data.rate;
+  console.log(
+    `Rate limits: ${rate.used}/${rate.limit} - Remaining: ${rate.remaining} Reset: ${rate.reset}`
+  );
+};
+
 export const upload = async (
   config: Config,
   github: GitHub,
@@ -285,6 +292,7 @@ export const release = async (
       discussion_category_name,
       generate_release_notes
     });
+
     return release.data;
   } catch (error) {
     if (error.status === 404) {
@@ -298,9 +306,14 @@ export const release = async (
       if (target_commitish) {
         commitMessage = ` using commit "${target_commitish}"`;
       }
+
+      const response = await releaser.getRateLimit();
+      printRateLimit(response);
+
       console.log(
         `👩‍🏭 Creating new GitHub release for tag ${tag_name}${commitMessage}...`
       );
+
       try {
         let release = await releaser.createRelease({
           owner,
@@ -314,6 +327,10 @@ export const release = async (
           discussion_category_name,
           generate_release_notes
         });
+
+        const response = await releaser.getRateLimit();
+        printRateLimit(response);
+
         return release.data;
       } catch (error) {
         // presume a race with competing metrix runs
@@ -326,13 +343,14 @@ export const release = async (
         );
         return release(config, releaser, maxRetries - 1);
       }
+
     } else {
       console.log(
         `⚠️ Unexpected error fetching GitHub release for tag ${config.github_ref}: ${error}`
       );
+
       const response = await releaser.getRateLimit();
-      const rate = response.data.rate;
-      console.log(`${rate.used}/${rate.limit} - Remaining: ${rate.remaining} Reset: ${rate.reset}`);
+      printRateLimit(response);
 
       throw error;
     }

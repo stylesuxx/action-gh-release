@@ -66,37 +66,21 @@ async function run() {
         console.warn(`🤔 ${config.input_files} not include valid file.`);
       }
       const currentAssets = rel.assets;
-      let assets : any[] = [];
-      for(let i = 0; i < files.length; i+= 1) {
-        const path = files[i];
-        const json = await upload(
-          config,
-          gh,
-          uploadUrl(rel.upload_url),
-          path,
-          currentAssets
-        );
-        delete json.uploader;
-        assets.push(json);
-      }
-
-      if(false) {
-        assets = await Promise.all(
-          files.map(async path => {
-            const json = await upload(
-              config,
-              gh,
-              uploadUrl(rel.upload_url),
-              path,
-              currentAssets
-            );
-            delete json.uploader;
-            return json;
-          })
-        ).catch(error => {
-          throw error;
-        });
-      }
+      const assets = await Promise.all(
+        files.map(async path => {
+          const json = await upload(
+            config,
+            gh,
+            uploadUrl(rel.upload_url),
+            path,
+            currentAssets
+          );
+          delete json.uploader;
+          return json;
+        })
+      ).catch(error => {
+        throw error;
+      });
       setOutput("assets", assets);
     }
     console.log(`🎉 Release ready at ${rel.html_url}`);
