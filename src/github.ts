@@ -183,6 +183,8 @@ export const upload = async (
   console.log(`⬆️ Uploading ${name}...`);
   const endpoint = new URL(url);
   endpoint.searchParams.append("name", name);
+  const json = {};
+  /*
   const resp = await fetch(endpoint, {
     headers: {
       "content-length": `${size}`,
@@ -200,6 +202,7 @@ export const upload = async (
       }\n${json.message}\n${JSON.stringify(json.errors)}`
     );
   }
+  */
   return json;
 };
 
