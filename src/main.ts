@@ -80,7 +80,8 @@ async function run() {
           delete json.uploader;
           return json;
         })
-      ).catch(error => {
+      ).catch(async (error) => {
+        await printRateLimitStats(github);
         throw error;
       });
       setOutput("assets", assets);
