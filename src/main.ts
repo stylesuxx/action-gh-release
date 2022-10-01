@@ -73,7 +73,6 @@ async function run() {
       for(let i = 0; i < files.length; i += 1) {
         const path = files[i];
 
-        await printRateLimitStats(github);
         const json = await upload(
           config,
           gh,
