@@ -5,7 +5,7 @@ import {
   unmatchedPatterns,
   uploadUrl
 } from "./util";
-import { release, upload, GitHubReleaser } from "./github";
+import { release, upload, GitHubReleaser, printRateLimitStats } from "./github";
 import { getOctokit } from "@actions/github";
 import { setFailed, setOutput } from "@actions/core";
 import { GitHub, getOctokitOptions } from "@actions/github/lib/utils";
@@ -59,7 +59,9 @@ async function run() {
       }
     });
     //);
-    const rel = await release(config, new GitHubReleaser(gh));
+    const github = new GitHubReleaser(gh);
+    await printRateLimitStats(github);
+    const rel = await release(config, github);
     if (config.input_files) {
       const files = paths(config.input_files);
       if (files.length == 0) {
@@ -83,7 +85,10 @@ async function run() {
       });
       setOutput("assets", assets);
     }
+
     console.log(`🎉 Release ready at ${rel.html_url}`);
+    await printRateLimitStats(github);
+
     setOutput("url", rel.html_url);
     setOutput("id", rel.id.toString());
     setOutput("upload_url", rel.upload_url);

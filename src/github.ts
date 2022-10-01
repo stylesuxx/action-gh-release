@@ -159,6 +159,11 @@ export const printRateLimit = (response) => {
   );
 };
 
+export const printRateLimitStats = async (releaser: Releaser) => {
+  const response = await releaser.getRateLimit();
+  printRateLimit(response);
+};
+
 export const upload = async (
   config: Config,
   github: GitHub,
@@ -307,9 +312,6 @@ export const release = async (
         commitMessage = ` using commit "${target_commitish}"`;
       }
 
-      const response = await releaser.getRateLimit();
-      printRateLimit(response);
-
       console.log(
         `👩‍🏭 Creating new GitHub release for tag ${tag_name}${commitMessage}...`
       );
@@ -327,9 +329,6 @@ export const release = async (
           discussion_category_name,
           generate_release_notes
         });
-
-        const response = await releaser.getRateLimit();
-        printRateLimit(response);
 
         return release.data;
       } catch (error) {
