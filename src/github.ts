@@ -194,27 +194,14 @@ export const upload = async (
     name,
     data: data.toString("binary"),
   });
-  console.log(response)
-  /*
-  const resp = await fetch(endpoint, {
-    headers: {
-      "content-length": `${size}`,
-      "content-type": mime,
-      authorization: `token ${config.github_token}`
-    },
-    method: "POST",
-    body
-  });
-  const json = await resp.json();
-  if (resp.status !== 201) {
+
+  if (response.status !== 201) {
     throw new Error(
-      `Failed to upload release asset ${name}. received status code ${
-        resp.status
-      }\n${json.message}\n${JSON.stringify(json.errors)}`
+      `Failed to upload release asset ${name}. received status code ${response.status}`
     );
   }
-  */
-  return json;
+
+  return response.data;
 };
 
 export const release = async (
