@@ -165,10 +165,12 @@ export const upload = async (
   github: GitHub,
   url: string,
   path: string,
-  currentAssets: Array<{ id: number; name: string }>
+  currentAssets: Array<{ id: number; name: string }>,
+  releaseId: number,
 ): Promise<any> => {
   const [owner, repo] = config.github_repository.split("/");
-  const { name, size, mime, data: body } = asset(path);
+  //const { name, size, mime, data: body } = asset(path);
+  const { name, size, mime, data } = asset(path);
   const currentAsset = currentAssets.find(
     ({ name: currentName }) => currentName == name
   );
@@ -184,6 +186,15 @@ export const upload = async (
   const endpoint = new URL(url);
   endpoint.searchParams.append("name", name);
   const json = {};
+
+  const response = await github.rest.repos.uploadReleaseAsset({
+    owner,
+    repo,
+    release_id: releaseId,
+    name,
+    data: data.toString("binary"),
+  });
+  console.log(response)
   /*
   const resp = await fetch(endpoint, {
     headers: {

@@ -79,7 +79,8 @@ async function run() {
           gh,
           uploadUrl(rel.upload_url),
           path,
-          currentAssets
+          currentAssets,
+          rel.id
         );
 
         delete json.uploader;
@@ -94,7 +95,8 @@ async function run() {
               gh,
               uploadUrl(rel.upload_url),
               path,
-              currentAssets
+              currentAssets,
+              rel.id
             );
             delete json.uploader;
             return json;
